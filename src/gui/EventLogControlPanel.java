@@ -60,7 +60,7 @@ public class EventLogControlPanel extends JPanel implements ActionListener {
 		// create "show/pause on all selections
 		c.gridwidth = 1;
 		addLabel("all");
-		showAllCheck = addCheckBox(true,false);
+		showAllCheck = addCheckBox(false,false);
 		pauseAllCheck = addCheckBox(false,true);
 		showAllCheck.addActionListener(this);
 		pauseAllCheck.addActionListener(this);
@@ -122,7 +122,18 @@ public class EventLogControlPanel extends JPanel implements ActionListener {
 	 * @see #addControl(String name, boolean showOn, boolean pauseOn)
 	 */
 	public EventLogControl addControl(String name) {
-		return addControl(name, true, false);
+		return addControl(name, false, false);
+	}
+
+	/**
+	 * Adds a new filter&pause control with specified "show" checked
+	 * but "pause" unchecked
+	 * @param name Name of the control
+	 * @param showOn Is "show" initially selected
+	 * @return Event log control object that can be queried for status
+	 */
+	public EventLogControl addControl(String name, boolean showOn) {
+		return addControl(name, showOn, false);
 	}
 
 	/**

@@ -83,6 +83,10 @@ public class EventLogPanel extends JPanel
 	private EventLogControl msgDropCheck;
 	private EventLogControl msgAbortCheck;
 
+	private EventLogControl publicKeyReceivedCheck;
+	private EventLogControl cipherTextReceivedCheck;
+	private EventLogControl keyExchangeSuccessCheck;
+	private EventLogControl keyExchangeFailureCheck;
 	/**
 	 * Creates a new log panel
 	 * @param gui The where this log belongs to (for callbacks)
@@ -127,9 +131,13 @@ public class EventLogPanel extends JPanel
 	private EventLogControlPanel createControls() {
 		EventLogControlPanel c = new EventLogControlPanel();
 		c.addHeading("connections");
-		conUpCheck = c.addControl("up");
+		conUpCheck = c.addControl("up", true);
 		conDownCheck = c.addControl("down");
 		c.addHeading("messages");
+		publicKeyReceivedCheck = c.addControl("KEM Public Key Received", true);
+		cipherTextReceivedCheck = c.addControl("KEM Ciphertext Received", true);
+		keyExchangeSuccessCheck = c.addControl("KEM Key exchange success", true);
+		keyExchangeFailureCheck = c.addControl("KEM Key exchange failure", true);
 		msgCreateCheck = c.addControl("created");
 		msgTransferStartCheck = c.addControl("started relay");
 		msgRelayCheck = c.addControl("relayed");
@@ -304,6 +312,23 @@ public class EventLogPanel extends JPanel
 				to,m);
 
 	}
+
+	public void publicKeyReceived(Message m, DTNHost from, DTNHost to) {
+		processEvent(publicKeyReceivedCheck, "KEM Public Key Received", from, to, m);
+	}
+
+	public void ciphertextReceived(Message m, DTNHost from, DTNHost to) {
+		processEvent(cipherTextReceivedCheck, "Ciphertext Received", from, to, m);
+	}
+
+	public void keyExchangeSuccess(DTNHost host1, DTNHost host2) {
+		processEvent(keyExchangeSuccessCheck, "Key exchange success", host1, host2, null);
+	}
+
+	public void keyExchangeFailure(DTNHost host1, DTNHost host2) {
+		processEvent(keyExchangeFailureCheck, "Key exchange failure", host1, host2, null);
+	}
+
 
 	// end of message interface implementations
 

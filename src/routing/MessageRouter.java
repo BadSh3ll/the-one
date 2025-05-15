@@ -20,6 +20,7 @@ import core.Settings;
 import core.SettingsError;
 import core.SimClock;
 import core.SimError;
+import gui.EventLogPanel;
 import routing.util.RoutingInfo;
 import util.Tuple;
 
@@ -514,6 +515,43 @@ public abstract class MessageRouter {
 		}
 	}
 
+
+	// --------------------------------------------------------- 
+
+	public void LogPublicKeyReceive(Message m, DTNHost from, DTNHost to) {
+		for (MessageListener ml : this.mListeners) {
+			if (ml instanceof EventLogPanel) {
+				((EventLogPanel) ml).publicKeyReceived(m, from, to);
+			}
+		}
+	}
+
+	public void LogCiphertextReceive(Message m, DTNHost from, DTNHost to) {
+		for (MessageListener ml : this.mListeners) {
+			if (ml instanceof EventLogPanel) {
+				((EventLogPanel) ml).ciphertextReceived(m, from, to);
+			}
+		}
+	}
+
+	public void LogKeyExchangeSuccess(DTNHost from, DTNHost to) {
+		for (MessageListener ml : this.mListeners) {
+			if (ml instanceof EventLogPanel) {
+				((EventLogPanel) ml).keyExchangeSuccess(from, to);
+			}
+		}
+	}
+
+	public void LogKeyExchangeFailure(DTNHost from, DTNHost to) {
+		for (MessageListener ml : this.mListeners) {
+			if (ml instanceof EventLogPanel) {
+				((EventLogPanel) ml).keyExchangeFailure(from, to);
+			}
+		}
+	}
+
+
+	// -------------------------------------------------------------
 	/**
 	 * Sorts/shuffles the given list according to the current sending queue
 	 * mode. The list can contain either Message or Tuple<Message, Connection>

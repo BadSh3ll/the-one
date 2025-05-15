@@ -1,0 +1,78 @@
+# General settings
+Scenario.name = Test
+Scenario.simulateConnections = true
+Scenario.updateInterval = 0.01
+Scenario.endTime = 43200
+Scenario.nrofHostGroups = 2
+
+
+btInterface.type = SimpleBroadcastInterface
+btInterface.transmitSpeed = 250k
+btInterface.transmitRange = 500
+
+
+Group.bufferSize = 5M
+
+Group1.movementModel = MapRouteMovement
+Group1.router = KeyExchangeRouter
+ProphetRouter.secondsInTimeUnit = 30
+Group1.bufferSize = 5M
+Group1.nrofInterfaces = 1
+Group1.interface1 = btInterface
+Group1.speed = 0.5, 1.5
+Group1.msgTtl = 300
+Group1.nrofHosts = 2
+Group1.groupID = a
+
+Group1.routeFile = data/tram3.wkt
+Group1.routeType = 1
+
+
+Group2.movementModel = MapRouteMovement
+Group2.router = KeyExchangeRouter
+Group2.bufferSize = 5M
+Group2.nrofInterfaces = 1
+Group2.interface1 = btInterface
+Group2.speed = 0.5, 1.5
+Group2.msgTtl = 300
+Group2.nrofHosts = 2
+Group2.groupID = b
+
+Group2.routeFile = data/tram4.wkt
+Group2.routeType = 1
+
+MovementModel.rngSeed = 0
+MovementModel.worldSize = 4500, 3400
+
+MapBasedMovement.nrofMapFiles = 4
+
+MapBasedMovement.mapFile1 = data/roads.wkt
+MapBasedMovement.mapFile2 = data/main_roads.wkt
+MapBasedMovement.mapFile3 = data/pedestrian_paths.wkt
+MapBasedMovement.mapFile4 = data/shops.wkt
+
+Events.nrof = 1
+# Class of the first event generator
+Events1.class = MessageEventGenerator
+# (following settings are specific for the MessageEventGenerator class)
+# Creation interval in seconds (one new message every 25 to 35 seconds)
+Events1.interval = 25,35
+# Message sizes (500kB - 1MB)
+Events1.size = 500k,1M
+# range of message source/destination addresses
+Events1.hosts = 0, 2
+# Message ID prefix
+Events1.prefix = M
+
+Report.nrofReports = 1
+Report.reportDir = reports
+# Report classes to load
+# Report.report1 = MessageStatsReport
+# Report.report2 = ContactTimesReport
+Report.report1 = MessageDeliveryReport
+
+
+## Optimization settings -- these affect the speed of the simulation
+## see World class for details.
+Optimization.cellSizeMult = 5
+Optimization.randomizeUpdateOrder = true
