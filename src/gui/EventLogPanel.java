@@ -134,10 +134,10 @@ public class EventLogPanel extends JPanel
 		conUpCheck = c.addControl("up", true);
 		conDownCheck = c.addControl("down");
 		c.addHeading("messages");
-		publicKeyReceivedCheck = c.addControl("KEM Public Key Received", true);
-		cipherTextReceivedCheck = c.addControl("KEM Ciphertext Received", true);
-		keyExchangeSuccessCheck = c.addControl("KEM Key exchange success", true);
-		keyExchangeFailureCheck = c.addControl("KEM Key exchange failure", true);
+		publicKeyReceivedCheck = c.addControl("Public Key Received", true);
+		cipherTextReceivedCheck = c.addControl("Ciphertext Received", true);
+		keyExchangeSuccessCheck = c.addControl("Key exchange success", true);
+		keyExchangeFailureCheck = c.addControl("Key exchange failure", true);
 		msgCreateCheck = c.addControl("created");
 		msgTransferStartCheck = c.addControl("started relay");
 		msgRelayCheck = c.addControl("relayed");
@@ -314,7 +314,7 @@ public class EventLogPanel extends JPanel
 	}
 
 	public void publicKeyReceived(Message m, DTNHost from, DTNHost to) {
-		processEvent(publicKeyReceivedCheck, "KEM Public Key Received", from, to, m);
+		processEvent(publicKeyReceivedCheck, "Public Key Received", from, to, m);
 	}
 
 	public void ciphertextReceived(Message m, DTNHost from, DTNHost to) {
