@@ -3,7 +3,7 @@ package kem;
 import java.security.PublicKey;
 
 public class KemPublicKey implements PublicKey {
-    
+
     private final Poly a;
     private final Poly p;
 

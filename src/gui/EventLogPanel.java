@@ -322,11 +322,11 @@ public class EventLogPanel extends JPanel
 	}
 
 	public void keyExchangeSuccess(DTNHost host1, DTNHost host2) {
-		processEvent(keyExchangeSuccessCheck, "Key exchange success", host1, host2, null);
+		processEvent(keyExchangeSuccessCheck, "Key Exchange Succeeded", host1, host2, null);
 	}
 
 	public void keyExchangeFailure(DTNHost host1, DTNHost host2) {
-		processEvent(keyExchangeFailureCheck, "Key exchange failure", host1, host2, null);
+		processEvent(keyExchangeFailureCheck, "Key Exchange Failed", host1, host2, null);
 	}
 
 

@@ -8,7 +8,7 @@ Scenario.nrofHostGroups = 2
 
 btInterface.type = SimpleBroadcastInterface
 btInterface.transmitSpeed = 250k
-btInterface.transmitRange = 500
+btInterface.transmitRange = 320
 
 
 Group.bufferSize = 5M
@@ -21,7 +21,7 @@ Group1.nrofInterfaces = 1
 Group1.interface1 = btInterface
 Group1.speed = 0.5, 1.5
 Group1.msgTtl = 300
-Group1.nrofHosts = 2
+Group1.nrofHosts = 10
 Group1.groupID = a
 
 Group1.routeFile = data/tram3.wkt
@@ -35,7 +35,7 @@ Group2.nrofInterfaces = 1
 Group2.interface1 = btInterface
 Group2.speed = 0.5, 1.5
 Group2.msgTtl = 300
-Group2.nrofHosts = 2
+Group2.nrofHosts = 10
 Group2.groupID = b
 
 Group2.routeFile = data/tram4.wkt
