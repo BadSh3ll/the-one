@@ -57,6 +57,8 @@ public class KeyExchangeRouter extends ActiveRouter {
 
     @Override
     public void update() {
+
+        createPublicKeyMsg();
         super.update();
 
         if (isTransferring() || !canStartTransfer()) {
@@ -68,7 +70,6 @@ public class KeyExchangeRouter extends ActiveRouter {
             return; // started a transfer, don't try others (yet)
         }
         // Send public key to all connections
-        createPublicKeyMsg();
     }
 
     @Override
@@ -125,7 +126,7 @@ public class KeyExchangeRouter extends ActiveRouter {
             } else {
                 msg = createKemPublicKeyMsg(peer);
             }
-            MyPublicKeySent.put(peer.toString(), true);
+            // MyPublicKeySent.put(peer.toString(), true);
             createNewMessage(msg);
         }
     }
@@ -134,6 +135,7 @@ public class KeyExchangeRouter extends ActiveRouter {
     private void receivePublicKey(Message m, String type) {
 
         PublicKeys.put(m.getFrom().toString(), (PublicKey) m.getProperty("data"));
+        ((KeyExchangeRouter) m.getFrom().getRouter()).ACK_PUBKEY(getHost());
 
         switch (type) {
             case "VerifyPubKey":
@@ -227,6 +229,12 @@ public class KeyExchangeRouter extends ActiveRouter {
         }
         return out;
     }
+
+    private void ACK_PUBKEY(DTNHost peer) {
+        // Send an ACK message to the peer
+        MyPublicKeySent.put(peer.toString(), true);
+    }
+
 
     // Just for testing purposes
     private boolean isSameSharedSecretWith(DTNHost peer) {

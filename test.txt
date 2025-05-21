@@ -21,7 +21,7 @@ Group1.nrofInterfaces = 1
 Group1.interface1 = btInterface
 Group1.speed = 0.5, 1.5
 Group1.msgTtl = 300
-Group1.nrofHosts = 10
+Group1.nrofHosts = 3
 Group1.groupID = a
 
 Group1.routeFile = data/tram3.wkt
@@ -35,7 +35,7 @@ Group2.nrofInterfaces = 1
 Group2.interface1 = btInterface
 Group2.speed = 0.5, 1.5
 Group2.msgTtl = 300
-Group2.nrofHosts = 10
+Group2.nrofHosts = 3
 Group2.groupID = b
 
 Group2.routeFile = data/tram4.wkt
@@ -69,7 +69,8 @@ Report.reportDir = reports
 # Report classes to load
 # Report.report1 = MessageStatsReport
 # Report.report2 = ContactTimesReport
-Report.report1 = MessageDeliveryReport
+Report.granularity = 1
+Report.report1 = EnergyLevelReport
 
 
 ## Optimization settings -- these affect the speed of the simulation
