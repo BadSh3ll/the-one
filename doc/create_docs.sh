@@ -1,1 +1,1 @@
-javadoc -classpath ../target:../lib/ECLA.jar:../lib/DTNConsoleConnection.jar -sourcepath ../src/ -subpackages core:ui:gui:input:movement:report:routing:applications:interfaces:util
+javadoc -classpath ../target:../lib/ECLA.jar:../lib/DTNConsoleConnection.jar:../lib/bcprov-jdk18on-1.80.jar -sourcepath ../src/ -subpackages core:ui:gui:input:movement:report:routing:applications:interfaces:util

@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"applications"},{"l":"core"},{"l":"gui"},{"l":"gui.nodefilter"},{"l":"gui.playfield"},{"l":"input"},{"l":"interfaces"},{"l":"movement"},{"l":"movement.map"},{"l":"report"},{"l":"routing"},{"l":"routing.maxprop"},{"l":"routing.schedule"},{"l":"routing.util"},{"l":"ui"},{"l":"util"}];updateSearchResults();

@@ -38,12 +38,12 @@ public class MessageCreateEvent extends MessageEvent {
 	 */
 	@Override
 	public void processEvent(World world) {
-		DTNHost to = world.getNodeByAddress(this.toAddr);
-		DTNHost from = world.getNodeByAddress(this.fromAddr);
+		// DTNHost to = world.getNodeByAddress(this.toAddr);
+		// DTNHost from = world.getNodeByAddress(this.fromAddr);
 
-		Message m = new Message(from, to, this.id, this.size);
-		m.setResponseSize(this.responseSize);
-		from.createNewMessage(m);
+		// Message m = new Message(from, to, this.id, this.size);
+		// m.setResponseSize(this.responseSize);
+		// from.createNewMessage(m);
 	}
 
 	@Override
