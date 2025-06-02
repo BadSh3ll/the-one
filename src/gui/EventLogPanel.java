@@ -131,13 +131,13 @@ public class EventLogPanel extends JPanel
 	private EventLogControlPanel createControls() {
 		EventLogControlPanel c = new EventLogControlPanel();
 		c.addHeading("connections");
-		conUpCheck = c.addControl("up", true);
+		conUpCheck = c.addControl("up");
 		conDownCheck = c.addControl("down");
 		c.addHeading("messages");
-		publicKeyReceivedCheck = c.addControl("Public Key Received", true);
-		cipherTextReceivedCheck = c.addControl("Ciphertext Received", true);
+		publicKeyReceivedCheck = c.addControl("Public Key Received");
+		cipherTextReceivedCheck = c.addControl("Ciphertext Received");
 		keyExchangeSuccessCheck = c.addControl("Key exchange success", true);
-		keyExchangeFailureCheck = c.addControl("Key exchange failure", true);
+		keyExchangeFailureCheck = c.addControl("Key exchange failure");
 		msgCreateCheck = c.addControl("created");
 		msgTransferStartCheck = c.addControl("started relay");
 		msgRelayCheck = c.addControl("relayed");

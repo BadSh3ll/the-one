@@ -1,5 +1,5 @@
 # General settings
-Scenario.name = TEST
+Scenario.name = KEM_100
 Scenario.simulateConnections = true
 Scenario.updateInterval = 0.01
 Scenario.endTime = 10800
@@ -19,14 +19,14 @@ Group.speed = 0.5, 1.5
 Group.msgTtl = 300
 Group.okMaps = 1
 
-Group.nrofHosts = 4
+Group.nrofHosts = 100
 
 Group.initialEnergy = 10000
 Group.scanEnergy = 0.1
-Group.transmitEnergy = 5000
+Group.transmitEnergy = 0.5
 Group.scanResponseEnergy = 0.1
 
-MovementModel.rngSeed = 1
+MovementModel.rngSeed = 123456789
 MovementModel.worldSize = 4500, 3400
 
 MapBasedMovement.nrofMapFiles = 4

@@ -23,7 +23,7 @@ import sign.Dilithium;
 import sign.DilithiumPrivateKey;
 import sign.DilithiumPublicKey;
 
-public class KeyExchangeRouter extends ActiveRouter {
+public class NoKeyExchangeRouter extends ActiveRouter {
 
     private KeyPair KemKeyPair;
     private KeyPair SignKeyPair;
@@ -34,7 +34,7 @@ public class KeyExchangeRouter extends ActiveRouter {
     private Map<String, Message> Ciphertexts = new HashMap<>();
 
 
-    public KeyExchangeRouter(Settings s) {
+    public NoKeyExchangeRouter(Settings s) {
         super(s);
     }
 
@@ -42,7 +42,7 @@ public class KeyExchangeRouter extends ActiveRouter {
      * Copy constructor.
      * @param r The router prototype where setting values are copied from
      */
-    protected KeyExchangeRouter(KeyExchangeRouter r) {
+    protected NoKeyExchangeRouter(NoKeyExchangeRouter r) {
         super(r);
         this.KemKeyPair = Kem.keygen();
         this.SignKeyPair = Dilithium.keygen(null);
@@ -98,8 +98,8 @@ public class KeyExchangeRouter extends ActiveRouter {
     }
 
     @Override
-    public KeyExchangeRouter replicate() {
-        return new KeyExchangeRouter(this);
+    public NoKeyExchangeRouter replicate() {
+        return new NoKeyExchangeRouter(this);
     }
 
     private Message createVerifyPublicKeyMsg(DTNHost peer) {
@@ -125,7 +125,6 @@ public class KeyExchangeRouter extends ActiveRouter {
             } else {
                 msg = createKemPublicKeyMsg(peer);
             }
-            // MyPublicKeySent.put(peer.toString(), true);
             createNewMessage(msg);
         }
     }
@@ -134,24 +133,11 @@ public class KeyExchangeRouter extends ActiveRouter {
     private void receivePublicKey(Message m, String type) {
 
         PublicKeys.put(m.getFrom().toString(), (PublicKey) m.getProperty("data"));
-        ((KeyExchangeRouter) m.getFrom().getRouter()).ACK_PUBKEY(getHost());
+        ((NoKeyExchangeRouter) m.getFrom().getRouter()).ACK_PUBKEY(getHost());
 
         switch (type) {
             case "VerifyPubKey":
-                // Try to decrypt again only a ciphertext was saved.
-                if (!Ciphertexts.containsKey(m.getFrom().toString())) return;
-                int[] ss = decrypt((CipherText) Ciphertexts.get(m.getFrom().toString()).getProperty("data"),
-                        (KemPrivateKey) KemKeyPair.getPrivate(),
-                        (DilithiumPublicKey) PublicKeys.get(m.getFrom().toString()),
-                        (byte[]) Ciphertexts.get(m.getFrom().toString()).getProperty("signature"));
-                // Store the shared secret
-                SharedSecrets.put(m.getFrom().toString(), ss);
-                // Check if the shared secret is the same as the one we generated
-                if (isSameSharedSecretWith(m.getFrom())) {
-                    LogKeyExchangeSuccess(m.getTo(), m.getFrom());
-                } else {
-                    LogKeyExchangeFailure(m.getTo(), m.getFrom());
-                }
+
                 break;
             case "KemPubKey":
                 // Encrypt the message
@@ -164,87 +150,20 @@ public class KeyExchangeRouter extends ActiveRouter {
     }
 
     private void receiveCiphertext(Message m) {
-        if (!PublicKeys.containsKey(m.getFrom().toString())) {
-            Ciphertexts.put(m.getFrom().toString(), m);
-            return;
-        }
-        // Decrypt the message
-        int[] ss = decrypt((CipherText) m.getProperty("data"),
-                (KemPrivateKey) KemKeyPair.getPrivate(),
-                (DilithiumPublicKey) PublicKeys.get(m.getFrom().toString()),
-                (byte[]) m.getProperty("signature"));
-        // Store the shared secret
-        SharedSecrets.put(m.getFrom().toString(), ss);
-        // Check if the shared secret is the same as the one we generated
-        if (isSameSharedSecretWith(m.getFrom())) {
-            LogKeyExchangeSuccess(m.getTo(), m.getFrom());
-        } else {
-            LogKeyExchangeFailure(m.getTo(), m.getFrom());
-        }
+
     }
 
     private Message createEncryptedMessage(Message m) {
         DTNHost origin = m.getFrom();
-        // Generate a shared secret
-        int [] sharedSecret = new int[Kem.N];
-        Rng.sampleNoise(sharedSecret);
-        // Encrypt the message
-        KemPublicKey pk = (KemPublicKey) m.getProperty("data");
-        CipherText ct = Kem.encapsulate(pk, sharedSecret);
-        // Sign the message
-        byte[] sig = Dilithium.sign((DilithiumPrivateKey) SignKeyPair.getPrivate(), intArrayToByteArray(sharedSecret));
-        // Store the shared secret
-        SharedSecrets.put(origin.toString(), sharedSecret);
-        // Create a new message with the ciphertext
         String msgId = "CiphertextFrom" + getHost().toString();
-        Message msg = new Message(getHost(), origin, msgId, ct.toString().length());
-        msg.addProperty("data", ct);
-        msg.addProperty("signature", sig);
+        Message msg = new Message(getHost(), origin, msgId, 2000);
         createNewMessage(msg);
         return msg;
     }
 
 
-    // Decrypt the ciphertext and verify the signature
-    private int[] decrypt(CipherText ct, KemPrivateKey sk, DilithiumPublicKey vk, byte[] sig) {
-        // Decrypt the ciphertext
-        int[] sharedSecret = Kem.decapsulate(sk, ct);
-        // Verify the signature
-        if (!Dilithium.verify(vk, sig, intArrayToByteArray(sharedSecret))) {
-            System.out.println("Signature verification failed.");
-            return null;
-        }
-        return sharedSecret;
-    }
-    public static byte[] intArrayToByteArray(int[] arr) {
-        byte[] out = new byte[arr.length * 4];
-        for (int i = 0; i < arr.length; i++) {
-            out[i * 4]     = (byte) ((arr[i] >> 24) & 0xFF);
-            out[i * 4 + 1] = (byte) ((arr[i] >> 16) & 0xFF);
-            out[i * 4 + 2] = (byte) ((arr[i] >> 8) & 0xFF);
-            out[i * 4 + 3] = (byte) (arr[i] & 0xFF);
-        }
-        return out;
-    }
-
     private void ACK_PUBKEY(DTNHost peer) {
-        // Send an ACK message to the peer
         MyPublicKeySent.put(peer.toString(), true);
     }
 
-
-    // Just for testing purposes
-    private boolean isSameSharedSecretWith(DTNHost peer) {
-        if (!SharedSecrets.containsKey(peer.toString())) return false;
-        int[] mine = SharedSecrets.get(peer.toString());
-        int[] their = ((KeyExchangeRouter) peer.getRouter()).sharedSecretWith(getHost());
-        return Arrays.equals(mine, their);
-
-    }
-
-    // Just for testing purposes
-    private int[] sharedSecretWith(DTNHost peer) {
-        if (!SharedSecrets.containsKey(peer.toString())) return null;
-        return SharedSecrets.get(peer.toString());
-    }
 }
