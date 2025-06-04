@@ -21,6 +21,7 @@ import core.SettingsError;
 import core.SimClock;
 import core.SimError;
 import gui.EventLogPanel;
+import report.KeyExchangeRateReport;
 import routing.util.RoutingInfo;
 import util.Tuple;
 
@@ -123,10 +124,10 @@ public abstract class MessageRouter {
 
 		if (s.contains(MSG_TTL_S)) {
 			this.msgTtl = s.getInt(MSG_TTL_S);
-			
+
 			if (this.msgTtl > MAX_TTL_VALUE){
-				throw new SettingsError("Invalid value for " + 
-						s.getFullPropertyName(MSG_TTL_S) + 
+				throw new SettingsError("Invalid value for " +
+						s.getFullPropertyName(MSG_TTL_S) +
 								". Max value is limited to "+MAX_TTL_VALUE);
 			}
 		}
@@ -516,7 +517,7 @@ public abstract class MessageRouter {
 	}
 
 
-	// --------------------------------------------------------- 
+	// ---------------------------------------------------------
 
 	public void LogPublicKeyReceive(Message m, DTNHost from, DTNHost to) {
 		for (MessageListener ml : this.mListeners) {
@@ -539,6 +540,9 @@ public abstract class MessageRouter {
 			if (ml instanceof EventLogPanel) {
 				((EventLogPanel) ml).keyExchangeSuccess(from, to);
 			}
+			if (ml instanceof KeyExchangeRateReport) {
+                ((KeyExchangeRateReport) ml).ExchangeSuccess();
+            }
 		}
 	}
 
@@ -547,6 +551,9 @@ public abstract class MessageRouter {
 			if (ml instanceof EventLogPanel) {
 				((EventLogPanel) ml).keyExchangeFailure(from, to);
 			}
+			if (ml instanceof KeyExchangeRateReport) {
+                ((KeyExchangeRateReport) ml).ExchangeFailure();
+            }
 		}
 	}
 

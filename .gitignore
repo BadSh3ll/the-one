@@ -2,13 +2,7 @@
 *.class
 
 # Simulation report files
-*reports*/*.txt
 
-# Javadocs
-*.html
-doc/stylesheet.css
-doc/resources/*.gif
-doc/package-list
 
 # Eclipse IDE files
 .classpath
