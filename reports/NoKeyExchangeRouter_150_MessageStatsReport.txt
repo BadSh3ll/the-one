@@ -1,0 +1,20 @@
+Message stats for scenario NoKeyExchangeRouter_150
+sim_time: 10800.0000
+created: 66479
+started: 23086
+relayed: 23086
+aborted: 0
+dropped: 0
+removed: 0
+delivered: 23086
+delivery_prob: 0.3473
+response_prob: 0.0000
+overhead_ratio: 0.0000
+latency_avg: 0.0043
+latency_med: 0.0000
+hopcount_avg: 1.0000
+hopcount_med: 1
+buffertime_avg: NaN
+buffertime_med: NaN
+rtt_avg: NaN
+rtt_med: NaN
