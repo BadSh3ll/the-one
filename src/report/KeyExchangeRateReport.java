@@ -48,6 +48,8 @@ public class KeyExchangeRateReport extends Report implements MessageListener {
 	public void done() {
 	    write("Key Exchange Success Count: " + successCount);
         write("Key Exchange Failure Count: " + failureCount);
+        successCount = 0;
+        failureCount = 0;
 		super.done();
 	}
 
