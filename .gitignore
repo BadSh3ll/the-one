@@ -2,7 +2,8 @@
 *.class
 
 # Simulation report files
-
+reports/
+doc/
 
 # Eclipse IDE files
 .classpath

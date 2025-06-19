@@ -1,4 +1,0 @@
-Key Exchange Rate Report
-
-Key Exchange Success Count: 818
-Key Exchange Failure Count: 0

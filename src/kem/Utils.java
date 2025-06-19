@@ -23,4 +23,14 @@ public class Utils {
         System.out.println();
     }
 
+    public static byte[] intArrayToByteArray(int[] arr) {
+        byte[] out = new byte[arr.length * 4];
+        for (int i = 0; i < arr.length; i++) {
+            out[i * 4] = (byte) ((arr[i] >> 24) & 0xFF);
+            out[i * 4 + 1] = (byte) ((arr[i] >> 16) & 0xFF);
+            out[i * 4 + 2] = (byte) ((arr[i] >> 8) & 0xFF);
+            out[i * 4 + 3] = (byte) (arr[i] & 0xFF);
+        }
+        return out;
+    }
 }

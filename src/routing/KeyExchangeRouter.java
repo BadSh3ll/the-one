@@ -4,12 +4,14 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
 import core.Connection;
 import core.DTNHost;
 import core.Message;
+import core.MessageListener;
 import core.Settings;
 
 import kem.Kem;
@@ -28,36 +30,69 @@ public class KeyExchangeRouter extends ActiveRouter {
     private KeyPair KemKeyPair;
     private KeyPair SignKeyPair;
 
-    private Map<String, PublicKey> PublicKeys = new HashMap<>();
-    private Map<String, Boolean> MyPublicKeySent = new HashMap<>();
-    private Map<String, int[]> SharedSecrets = new HashMap<>();
-    private Map<String, Message> Ciphertexts = new HashMap<>();
+    private Map<String, PublicKey> PublicKeys;
+    private Map<String, Boolean> MyPublicKeySent;
+    private Map<String, int[]> SharedSecrets;
+    private Map<String, Message> Ciphertexts;
+
+
+    // Energy estimation
+    private static final double ENC_ENERGY = 1.78;
+    private static final double DEC_ENERGY = 0.83;
+    private static final double SIGN_ENERGY = 6.745;
+    private static final double VERIFY_ENERGY = 1.585;
 
 
     public KeyExchangeRouter(Settings s) {
         super(s);
     }
 
-    /**
-     * Copy constructor.
-     * @param r The router prototype where setting values are copied from
-     */
     protected KeyExchangeRouter(KeyExchangeRouter r) {
         super(r);
-        this.KemKeyPair = Kem.keygen();
-        this.SignKeyPair = Dilithium.keygen(null);
+    }
 
-        this.MyPublicKeySent = new HashMap<>();
-        this.PublicKeys = new HashMap<>();
-        this.SharedSecrets = new HashMap<>();
-        this.Ciphertexts = new HashMap<>();
+    @Override
+    public KeyExchangeRouter replicate() {
+        return new KeyExchangeRouter(this);
+    }
+    
+    @Override
+    public void init(DTNHost host, List<MessageListener> mListeners) {
+		super.init(host, mListeners);
+        
+        // Generate key pairs
+        KemKeyPair = Kem.keygen();
+        SignKeyPair = Dilithium.keygen(null);
+
+        // Initialize maps
+        MyPublicKeySent = new HashMap<>();
+        PublicKeys = new HashMap<>();
+        SharedSecrets = new HashMap<>();
+        Ciphertexts = new HashMap<>();
+    
+    }
+
+    @Override
+    public void changedConnection(Connection c) {
+        super.changedConnection(c);
+
+        // Try to send public keys if the connection is up
+        // and we haven't sent our public key to this peer yet.
+        if (c.isUp()) {
+            DTNHost peer = c.getOtherNode(getHost());
+            if (MyPublicKeySent.containsKey(peer.toString())) return; // Already sent
+            if (getHost().getAddress() > peer.getAddress()) {
+                createNewMessage(createVerifyPublicKeyMsg(peer));
+            } else {
+                createNewMessage(createKemPublicKeyMsg(peer));
+            }
+        }
     }
 
 
     @Override
     public void update() {
 
-        createPublicKeyMsg();
         super.update();
 
         if (isTransferring() || !canStartTransfer()) {
@@ -68,9 +103,10 @@ public class KeyExchangeRouter extends ActiveRouter {
         if (exchangeDeliverableMessages() != null) {
             return; // started a transfer, don't try others (yet)
         }
-        // Send public key to all connections
+
     }
 
+    
     @Override
     public Message messageTransferred(String id, DTNHost from) {
 
@@ -97,11 +133,6 @@ public class KeyExchangeRouter extends ActiveRouter {
         return m;
     }
 
-    @Override
-    public KeyExchangeRouter replicate() {
-        return new KeyExchangeRouter(this);
-    }
-
     private Message createVerifyPublicKeyMsg(DTNHost peer) {
         String msgId = "VerifyPubKey" + getHost().toString();
         Message msg = new Message(getHost(), peer, msgId, SignKeyPair.getPublic().getEncoded().length);
@@ -113,21 +144,6 @@ public class KeyExchangeRouter extends ActiveRouter {
         Message msg = new Message(getHost(), peer, msgId, KemKeyPair.getPublic().getEncoded().length);
         msg.addProperty("data", KemKeyPair.getPublic());
         return msg;
-    }
-
-    private void createPublicKeyMsg() {
-        for (Connection c : getConnections()) {
-            DTNHost peer = c.getOtherNode(getHost());
-            Message msg = null;
-            if (MyPublicKeySent.containsKey(peer.toString())) continue; // Already sent
-            if (getHost().toString().compareTo(peer.toString()) >  0) {
-                msg = createVerifyPublicKeyMsg(peer);
-            } else {
-                msg = createKemPublicKeyMsg(peer);
-            }
-            // MyPublicKeySent.put(peer.toString(), true);
-            createNewMessage(msg);
-        }
     }
 
 
@@ -155,7 +171,7 @@ public class KeyExchangeRouter extends ActiveRouter {
                 break;
             case "KemPubKey":
                 // Encrypt the message
-                createEncryptedMessage(m);
+                createNewMessage(createEncryptedMessage(m));
                 break;
             default:
                 System.out.println("Unknown public key type received.");
@@ -185,22 +201,26 @@ public class KeyExchangeRouter extends ActiveRouter {
 
     private Message createEncryptedMessage(Message m) {
         DTNHost origin = m.getFrom();
+        
         // Generate a shared secret
         int [] sharedSecret = new int[Kem.N];
         Rng.sampleNoise(sharedSecret);
+        
         // Encrypt the message
         KemPublicKey pk = (KemPublicKey) m.getProperty("data");
         CipherText ct = Kem.encapsulate(pk, sharedSecret);
+        this.energy.reduceEnergy(ENC_ENERGY);
         // Sign the message
-        byte[] sig = Dilithium.sign((DilithiumPrivateKey) SignKeyPair.getPrivate(), intArrayToByteArray(sharedSecret));
+        byte[] sig = Dilithium.sign((DilithiumPrivateKey) SignKeyPair.getPrivate(), Utils.intArrayToByteArray(sharedSecret));
+        this.energy.reduceEnergy(SIGN_ENERGY);
         // Store the shared secret
         SharedSecrets.put(origin.toString(), sharedSecret);
+        
         // Create a new message with the ciphertext
         String msgId = "CiphertextFrom" + getHost().toString();
         Message msg = new Message(getHost(), origin, msgId, ct.toString().length());
         msg.addProperty("data", ct);
         msg.addProperty("signature", sig);
-        createNewMessage(msg);
         return msg;
     }
 
@@ -209,23 +229,16 @@ public class KeyExchangeRouter extends ActiveRouter {
     private int[] decrypt(CipherText ct, KemPrivateKey sk, DilithiumPublicKey vk, byte[] sig) {
         // Decrypt the ciphertext
         int[] sharedSecret = Kem.decapsulate(sk, ct);
+        this.energy.reduceEnergy(DEC_ENERGY);
         // Verify the signature
-        if (!Dilithium.verify(vk, sig, intArrayToByteArray(sharedSecret))) {
+        if (!Dilithium.verify(vk, sig, Utils.intArrayToByteArray(sharedSecret))) {
             System.out.println("Signature verification failed.");
             return null;
         }
+        this.energy.reduceEnergy(VERIFY_ENERGY);
         return sharedSecret;
     }
-    public static byte[] intArrayToByteArray(int[] arr) {
-        byte[] out = new byte[arr.length * 4];
-        for (int i = 0; i < arr.length; i++) {
-            out[i * 4]     = (byte) ((arr[i] >> 24) & 0xFF);
-            out[i * 4 + 1] = (byte) ((arr[i] >> 16) & 0xFF);
-            out[i * 4 + 2] = (byte) ((arr[i] >> 8) & 0xFF);
-            out[i * 4 + 3] = (byte) (arr[i] & 0xFF);
-        }
-        return out;
-    }
+   
 
     private void ACK_PUBKEY(DTNHost peer) {
         // Send an ACK message to the peer

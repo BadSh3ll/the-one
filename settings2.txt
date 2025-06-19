@@ -1,0 +1,56 @@
+# General settings
+Scenario.name = %%Group.router%%_%%Group.nrofHosts%%
+Scenario.simulateConnections = true
+Scenario.updateInterval = 0.01
+Scenario.endTime = 21600
+Scenario.nrofHostGroups = 1
+
+
+btInterface.type = SimpleBroadcastInterface
+btInterface.transmitSpeed = 250k
+btInterface.transmitRange = 250
+
+Group.movementModel = ShortestPathMapBasedMovement
+Group.router = ECDHRouter
+Group.bufferSize = 5M
+Group.nrofInterfaces = 1
+Group.interface1 = btInterface
+Group.speed = 0.5, 1.5
+Group.msgTtl = 300
+Group.okMaps = 1
+
+Group.nrofHosts = [10; 20; 30; 40; 50; 60; 70; 80; 90; 100; 110; 120; 130; 140; 150]
+Group.initialEnergy = 10000
+Group.scanEnergy = 0.1 
+Group.transmitEnergy = 0.5
+Group.scanResponseEnergy = 0.3
+
+MovementModel.rngSeed = 42
+MovementModel.worldSize = 4500, 3400
+
+MapBasedMovement.nrofMapFiles = 4
+
+MapBasedMovement.mapFile1 = data/roads.wkt
+MapBasedMovement.mapFile2 = data/main_roads.wkt
+MapBasedMovement.mapFile3 = data/pedestrian_paths.wkt
+MapBasedMovement.mapFile4 = data/shops.wkt
+
+
+Report.nrofReports = 11
+Report.reportDir = reports
+Report.report1 = MessageDelayReport
+Report.report2 = MessageDeliveryReport
+Report.report3 = CreatedMessagesReport
+Report.report4 = DeliveredMessagesReport
+Report.report5 = MessageCopyCountReport
+Report.report6 = MessageReport
+Report.report7 = MessageStatsReport
+Report.report8 = EnergyLevelReport
+Report.report9 = KeyExchangeRateReport
+Report.report10 = BufferOccupancyReport
+Report.report11 = ContactTimesReport
+
+Report.granularity = 1
+
+Optimization.cellSizeMult = 5
+Optimization.randomizeUpdateOrder = true

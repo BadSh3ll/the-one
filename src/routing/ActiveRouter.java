@@ -47,7 +47,7 @@ public abstract class ActiveRouter extends MessageRouter {
 	private double lastTtlCheck;
 
 	private MessageTransferAcceptPolicy policy;
-	private EnergyModel energy;
+	protected EnergyModel energy;
 
 	/**
 	 * Constructor. Creates a new message router based on the settings in
