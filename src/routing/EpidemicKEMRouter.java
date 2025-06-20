@@ -23,14 +23,19 @@ import sign.DilithiumPrivateKey;
 import sign.DilithiumPublicKey;
 
 public class EpidemicKEMRouter extends ActiveRouter {
-    
 
-    private KeyPair KemKeyPair;
-    private KeyPair SignKeyPair;
 
-    private Map<String, KemPublicKey> PublicKeys;
-    private Map<String, DilithiumPublicKey> VerifyKeys;
-    private Map<String, int[]> SharedSecrets;
+    // private KeyPair KemKeyPair;
+    // private KeyPair SignKeyPair;
+
+    private Map<String, String> PublicKeys;
+    private Map<String, String> VerifyKeys;
+    // private Map<String, int[]> SharedSecrets;
+    //
+    private static final double ENC_ENERGY = 1.78;
+    private static final double DEC_ENERGY = 0.83;
+    private static final double SIGN_ENERGY = 6.745;
+    private static final double VERIFY_ENERGY = 1.585;
 
 
     public EpidemicKEMRouter(Settings s) {
@@ -50,15 +55,15 @@ public class EpidemicKEMRouter extends ActiveRouter {
     public void init(DTNHost host, List<MessageListener> mListeners) {
         super.init(host, mListeners);
         // Additional initialization for Epidemic KEM Router can be added here
-        KemKeyPair = Kem.keygen();
-        SignKeyPair = Dilithium.keygen(null); // Assuming Kem.keygen() generates a key pair
+        // KemKeyPair = Kem.keygen();
+        // SignKeyPair = Dilithium.keygen(null); // Assuming Kem.keygen() generates a key pair
 
         PublicKeys = new HashMap<>();
         VerifyKeys = new HashMap<>();
-        SharedSecrets = new HashMap<>();
-    
-        PublicKeys.put(getHost().toString(), (KemPublicKey) KemKeyPair.getPublic());
-        VerifyKeys.put(getHost().toString(), (DilithiumPublicKey) SignKeyPair.getPublic());
+        // SharedSecrets = new HashMap<>();
+
+        PublicKeys.put(getHost().toString(), "PublicKey" + getHost().toString());
+        VerifyKeys.put(getHost().toString(), "VerifyKey" + getHost().toString());
     }
 
     @Override
@@ -96,27 +101,28 @@ public class EpidemicKEMRouter extends ActiveRouter {
     public Message messageTransferred(String id, DTNHost from) {
 
         Message m = super.messageTransferred(id, from);
-    
+
         // If the message is a public key or verify key, add it to the respective map
         if (m.getId().startsWith("PublicKey") && !PublicKeys.containsKey((String) m.getProperty("hostId"))) {
-            KemPublicKey publicKey = (KemPublicKey) m.getProperty("data");
+            String publicKey = (String) m.getProperty("data");
             PublicKeys.put((String) m.getProperty("hostId"), publicKey);
 
             if (getHost().toString().compareTo((String) m.getProperty("hostId")) > 0) {
                 createNewMessage(createCipherTextMessage(m));
             }
-        } 
+        }
         else if (m.getId().startsWith("VerifyKey") && !VerifyKeys.containsKey((String) m.getProperty("hostId"))) {
-            DilithiumPublicKey verifyKey = (DilithiumPublicKey) m.getProperty("data");
+            String verifyKey = (String) m.getProperty("data");
             VerifyKeys.put((String) m.getProperty("hostId"), verifyKey);
         } else if (m.getId().startsWith("CiphertextFrom") && m.getTo().equals(getHost())) {
-            
+            this.energy.reduceEnergy(DEC_ENERGY);
+            this.energy.reduceEnergy(VERIFY_ENERGY);
             LogKeyExchangeSuccess(m.getFrom(), getHost());
             // Process the decrypted data as needed
         }
-    
+
         return m;
-    
+
     }
 
 
@@ -131,18 +137,18 @@ public class EpidemicKEMRouter extends ActiveRouter {
         }
 
         for (String hostId : missingPublicKeys) {
-            KemPublicKey publicKey = PublicKeys.get(hostId);
+            String publicKey = PublicKeys.get(hostId);
             String msgId = "PublicKey" + hostId;
-            Message message = new Message(getHost(), peer, msgId, publicKey.getEncoded().length);
+            Message message = new Message(getHost(), peer, msgId, 2096);
             message.addProperty("hostId",  hostId);
             message.addProperty("data", publicKey);
             createNewMessage(message);
         }
 
         for (String hostId : missingVerifyKeys) {
-            DilithiumPublicKey verifyKey = VerifyKeys.get(hostId);
+            String verifyKey = VerifyKeys.get(hostId);
             String msgId = "VerifyKey" + hostId;
-            Message message = new Message(getHost(), peer, msgId, verifyKey.getEncoded().length);
+            Message message = new Message(getHost(), peer, msgId, 1312);
             message.addProperty("hostId",  hostId);
             message.addProperty("data", verifyKey);
             createNewMessage(message);
@@ -151,7 +157,7 @@ public class EpidemicKEMRouter extends ActiveRouter {
     }
 
     public Set<String> missingKeys(Set<String> mines,  Set<String> theirs) {
-        
+
         Set<String> missing = new HashSet<>();
 
         for (String mine: mines) {
@@ -159,7 +165,7 @@ public class EpidemicKEMRouter extends ActiveRouter {
             missing.add(mine);
         }
         return missing;
-    
+
     }
 
     public Set<String> getKnownPublicKeys() {
@@ -171,33 +177,33 @@ public class EpidemicKEMRouter extends ActiveRouter {
     }
 
     public Message createCipherTextMessage(Message pkmsg) {
-        
+
         String hostId = (String) pkmsg.getProperty("hostId");
         DTNHost peer = SimScenario.getInstance().getWorld().getNodeByAddress(Integer.parseInt(hostId.substring(1)));
 
-        KemPublicKey publicKey = (KemPublicKey) pkmsg.getProperty("data");
+        // KemPublicKey publicKey = (KemPublicKey) pkmsg.getProperty("data");
 
 
-        int [] sharedSecret = new int[Kem.N];
-        Rng.sampleNoise(sharedSecret);
+        // int [] sharedSecret = new int[Kem.N];
+        // Rng.sampleNoise(sharedSecret);
 
-        CipherText ct = Kem.encapsulate(publicKey, sharedSecret);
-        // this.energy.reduceEnergy(ENC_ENERGY);
+        // CipherText ct = Kem.encapsulate(publicKey, sharedSecret);
+        this.energy.reduceEnergy(ENC_ENERGY);
         // Sign the message
-        byte[] sig = Dilithium.sign((DilithiumPrivateKey) SignKeyPair.getPrivate(), Utils.intArrayToByteArray(sharedSecret));
-        // this.energy.reduceEnergy(SIGN_ENERGY);
+        // byte[] sig = Dilithium.sign((DilithiumPrivateKey) SignKeyPair.getPrivate(), Utils.intArrayToByteArray(sharedSecret));
+        this.energy.reduceEnergy(SIGN_ENERGY);
         // Store the shared secret
-        SharedSecrets.put(peer.toString(), sharedSecret);
-        
+        // SharedSecrets.put(peer.toString(), sharedSecret);
+
         // Create a new message with the ciphertext
         String msgId = "CiphertextFrom" + getHost().toString() + "To" + hostId;
-        Message msg = new Message(getHost(), peer, msgId, ct.toString().length());
-        msg.addProperty("data", ct);
-        msg.addProperty("signature", sig);
+        Message msg = new Message(getHost(), peer, msgId, 2000);
+        // msg.addProperty("data", ct);
+        // msg.addProperty("signature", sig);
         return msg;
 
     }
 
-    
+
 
 }
