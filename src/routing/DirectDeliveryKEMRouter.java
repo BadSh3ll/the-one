@@ -25,7 +25,7 @@ import sign.Dilithium;
 import sign.DilithiumPrivateKey;
 import sign.DilithiumPublicKey;
 
-public class KeyExchangeRouter extends ActiveRouter {
+public class DirectDeliveryKEMRouter extends ActiveRouter {
 
     private KeyPair KemKeyPair;
     private KeyPair SignKeyPair;
@@ -33,7 +33,6 @@ public class KeyExchangeRouter extends ActiveRouter {
     private Map<String, PublicKey> PublicKeys;
     private Map<String, Boolean> MyPublicKeySent;
     private Map<String, int[]> SharedSecrets;
-    private Map<String, Message> Ciphertexts;
 
 
     // Energy estimation
@@ -43,17 +42,17 @@ public class KeyExchangeRouter extends ActiveRouter {
     private static final double VERIFY_ENERGY = 1.585;
 
 
-    public KeyExchangeRouter(Settings s) {
+    public DirectDeliveryKEMRouter(Settings s) {
         super(s);
     }
 
-    protected KeyExchangeRouter(KeyExchangeRouter r) {
+    protected DirectDeliveryKEMRouter(DirectDeliveryKEMRouter r) {
         super(r);
     }
 
     @Override
-    public KeyExchangeRouter replicate() {
-        return new KeyExchangeRouter(this);
+    public DirectDeliveryKEMRouter replicate() {
+        return new DirectDeliveryKEMRouter(this);
     }
     
     @Override
@@ -68,7 +67,6 @@ public class KeyExchangeRouter extends ActiveRouter {
         MyPublicKeySent = new HashMap<>();
         PublicKeys = new HashMap<>();
         SharedSecrets = new HashMap<>();
-        Ciphertexts = new HashMap<>();
     
     }
 
@@ -81,10 +79,9 @@ public class KeyExchangeRouter extends ActiveRouter {
         if (c.isUp()) {
             DTNHost peer = c.getOtherNode(getHost());
             if (MyPublicKeySent.containsKey(peer.toString())) return; // Already sent
-            if (getHost().getAddress() > peer.getAddress()) {
-                createNewMessage(createVerifyPublicKeyMsg(peer));
-            } else {
-                createNewMessage(createKemPublicKeyMsg(peer));
+            if (getHost().getAddress() < peer.getAddress()) {
+                createNewMessage(createPublicKeyMsg(peer));
+                MyPublicKeySent.put(peer.toString(), true);
             }
         }
     }
@@ -117,13 +114,9 @@ public class KeyExchangeRouter extends ActiveRouter {
 
         if (!getHost().equals(destination)) return m; // not for me
 
-        if (id.startsWith("VerifyPubKey")) {
-            LogPublicKeyReceive(m, origin, destination);
-            receivePublicKey(m, "VerifyPubKey");
-
-        } else if (id.startsWith("KemPubKey")) {
-            LogPublicKeyReceive(m, origin, destination);
-            receivePublicKey(m, "KemPubKey");
+        if (id.startsWith("PublicKey")) {
+            PublicKeys.put(m.getFrom().toString(), (PublicKey) m.getProperty("data"));
+            createNewMessage(createEncryptedMessage(m));
 
         } else if (id.startsWith("CiphertextFrom")) {
             LogCiphertextReceive(m, origin, destination);
@@ -133,61 +126,20 @@ public class KeyExchangeRouter extends ActiveRouter {
         return m;
     }
 
-    private Message createVerifyPublicKeyMsg(DTNHost peer) {
-        String msgId = "VerifyPubKey" + getHost().toString();
-        Message msg = new Message(getHost(), peer, msgId, SignKeyPair.getPublic().getEncoded().length);
-        msg.addProperty("data", SignKeyPair.getPublic());
-        return msg;
-    }
-    private Message createKemPublicKeyMsg(DTNHost peer) {
-        String msgId = "KemPubKey" + getHost().toString();
+    private Message createPublicKeyMsg(DTNHost peer) {
+        String msgId = "PublicKey" + getHost().toString();
         Message msg = new Message(getHost(), peer, msgId, KemKeyPair.getPublic().getEncoded().length);
         msg.addProperty("data", KemKeyPair.getPublic());
         return msg;
     }
 
 
-    private void receivePublicKey(Message m, String type) {
-
-        PublicKeys.put(m.getFrom().toString(), (PublicKey) m.getProperty("data"));
-        ((KeyExchangeRouter) m.getFrom().getRouter()).ACK_PUBKEY(getHost());
-
-        switch (type) {
-            case "VerifyPubKey":
-                // Try to decrypt again only a ciphertext was saved.
-                if (!Ciphertexts.containsKey(m.getFrom().toString())) return;
-                int[] ss = decrypt((CipherText) Ciphertexts.get(m.getFrom().toString()).getProperty("data"),
-                        (KemPrivateKey) KemKeyPair.getPrivate(),
-                        (DilithiumPublicKey) PublicKeys.get(m.getFrom().toString()),
-                        (byte[]) Ciphertexts.get(m.getFrom().toString()).getProperty("signature"));
-                // Store the shared secret
-                SharedSecrets.put(m.getFrom().toString(), ss);
-                // Check if the shared secret is the same as the one we generated
-                if (isSameSharedSecretWith(m.getFrom())) {
-                    LogKeyExchangeSuccess(m.getTo(), m.getFrom());
-                } else {
-                    LogKeyExchangeFailure(m.getTo(), m.getFrom());
-                }
-                break;
-            case "KemPubKey":
-                // Encrypt the message
-                createNewMessage(createEncryptedMessage(m));
-                break;
-            default:
-                System.out.println("Unknown public key type received.");
-        }
-
-    }
-
     private void receiveCiphertext(Message m) {
-        if (!PublicKeys.containsKey(m.getFrom().toString())) {
-            Ciphertexts.put(m.getFrom().toString(), m);
-            return;
-        }
+        
         // Decrypt the message
         int[] ss = decrypt((CipherText) m.getProperty("data"),
                 (KemPrivateKey) KemKeyPair.getPrivate(),
-                (DilithiumPublicKey) PublicKeys.get(m.getFrom().toString()),
+                (DilithiumPublicKey) (DilithiumPublicKey) m.getProperty("VerifyKey"),
                 (byte[]) m.getProperty("signature"));
         // Store the shared secret
         SharedSecrets.put(m.getFrom().toString(), ss);
@@ -217,10 +169,11 @@ public class KeyExchangeRouter extends ActiveRouter {
         SharedSecrets.put(origin.toString(), sharedSecret);
         
         // Create a new message with the ciphertext
-        String msgId = "CiphertextFrom" + getHost().toString();
-        Message msg = new Message(getHost(), origin, msgId, ct.toString().length());
+        String msgId = "CiphertextFrom" + getHost().toString() + "To" + origin.toString();
+        Message msg = new Message(getHost(), origin, msgId, ct.toString().length() + sig.length + SignKeyPair.getPublic().getEncoded().length);
         msg.addProperty("data", ct);
         msg.addProperty("signature", sig);
+        msg.addProperty("VerifyKey", SignKeyPair.getPublic());
         return msg;
     }
 
@@ -240,22 +193,16 @@ public class KeyExchangeRouter extends ActiveRouter {
     }
    
 
-    private void ACK_PUBKEY(DTNHost peer) {
-        // Send an ACK message to the peer
-        MyPublicKeySent.put(peer.toString(), true);
-    }
-
-
-    // Just for testing purposes
+    // Just for analysis purposes
     private boolean isSameSharedSecretWith(DTNHost peer) {
         if (!SharedSecrets.containsKey(peer.toString())) return false;
         int[] mine = SharedSecrets.get(peer.toString());
-        int[] their = ((KeyExchangeRouter) peer.getRouter()).sharedSecretWith(getHost());
+        int[] their = ((DirectDeliveryKEMRouter) peer.getRouter()).sharedSecretWith(getHost());
         return Arrays.equals(mine, their);
 
     }
 
-    // Just for testing purposes
+    // Just for analysis purposes
     private int[] sharedSecretWith(DTNHost peer) {
         if (!SharedSecrets.containsKey(peer.toString())) return null;
         return SharedSecrets.get(peer.toString());
